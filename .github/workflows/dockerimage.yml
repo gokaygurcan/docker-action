@@ -1,14 +1,32 @@
-name: Docker Image CI
+# gokaygurcan/docker-action
 
-on: [push]
+name: Deploy to Docker Hub
+
+on:
+   push:
+     branches:    
+      - master
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
+    
     steps:
-    - uses: actions/checkout@v1
-    - name: Build the Docker image
-      run: docker build --file Dockerfile --build-arg LICENSE_KEY=${{ secrets.LICENSE_KEY }} --tag gokaygurcan/docker-action:test .
+      - uses: actions/checkout@master
+
+      - name: Login to Docker Hub
+        if: success()
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build image
+        if: success()
+        run: docker build --file Dockerfile --build-arg LICENSE_KEY=${{ secrets.LICENSE_KEY }} --build-arg SHA=${{ github.sha }} --tag gokaygurcan/docker-action:test .
+
+      - name: Push to Docker registry
+        if: success()
+        uses: actions-hub/docker@master
+        with:
+          args: push gokaygurcan/docker-action:latest
